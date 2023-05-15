@@ -16,6 +16,7 @@ with open('config.txt', 'r', newline='') as file:
 
 new_dir = dir[1] # Директория хранения фото на ПК
 auto = dir[2] #автосмена обоев вкл или выкл
+logo = dir[3]
 dir = dir[0] #Директория хранения фото на сервере
 
 #Проверка автоматической смены изображений
@@ -54,15 +55,21 @@ def get_pc_info():
 
     aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
     aKey = winreg.OpenKey(aReg, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
-    aSCCM_version = winreg.OpenKey(aReg, r'SOFTWARE\Microsoft\SMS\Mobile Client')
-    SCCM_version = winreg.QueryValueEx(aSCCM_version, 'SmsClientVersion')[0]
+    try:
+        aSCCM_version = winreg.OpenKey(aReg, r'SOFTWARE\Microsoft\SMS\Mobile Client')
+        SCCM_version = winreg.QueryValueEx(aSCCM_version, 'SmsClientVersion')[0]
+    except:
+        SCCM_version = 'None'
     Build_number = winreg.QueryValueEx(aKey, 'CurrentBuildNumber')[0] #Build Number
     OS_Build = winreg.QueryValueEx(aKey, 'DisplayVersion')[0] #OS Build
     Host_Name = platform.node()
     Mother_name = subprocess.check_output("wmic bios get serialnumber").decode().split()[1]
 
     ver_parser = Dispatch('Scripting.FileSystemObject')
-    Crowdstrike_version = ver_parser.GetFileVersion('C:\Program Files\CrowdStrike\CSFalconContainer.exe')
+    try:
+        Crowdstrike_version = ver_parser.GetFileVersion('C:\Program Files\CrowdStrike\CSFalconContainer.exe')
+    except:
+        Crowdstrike_version = 'None'
     Edge_version = ver_parser.GetFileVersion('C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe')
 
     OS_Version = platform.platform(terse=True)
@@ -72,7 +79,10 @@ def get_pc_info():
         Machine_Domain = 'WFT'
     Logon_Domain = os.environ['userdomain']
     #Logon_Server = subprocess.run("gpresult /r", encoding='utf-8')
-    Logon_Server = subprocess.check_output('nltest /dsgetdc:wft.root.loc').decode('cp866').split()[2].split('.')[0].replace('\\', '')
+    try:
+        Logon_Server = subprocess.check_output('nltest /dsgetdc:wft.root.loc').decode('cp866').split()[2].split('.')[0].replace('\\', '')
+    except:
+        Logon_Server = 'None'
     User_name = subprocess.check_output('whoami').decode('cp866').replace('\n','')
     if User_name[0:3] == 'wft':
         User_name = User_name[4:]
@@ -94,17 +104,18 @@ def create_image():
         coordy += 20
         i += 1
 
-    watermark = Image.open('C:/Intel/logo.jpg')
+    watermark = Image.open(logo)
 
     general_watermark.paste(watermark, (10, 10))
     #general_watermark.show()
 
     general_watermark.putalpha(128)
+    copy_server_to_pc_wallpaper()
     new_wallpapper = Image.open(new_dir)
     position = (new_wallpapper.width - general_watermark.width,
                 new_wallpapper.height - general_watermark.height)
 
-    new_wallpapper.alpha_composite(general_watermark, position)
+    new_wallpapper.paste(general_watermark, position)
     new_wallpapper.show()
 
 
