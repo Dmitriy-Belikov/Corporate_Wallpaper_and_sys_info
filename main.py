@@ -5,14 +5,18 @@ import platform
 import socket
 import os
 import subprocess
-from PIL import Image, ImageDraw, ImageFont
+import csv
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
 dir = []
-with open('config.txt') as file:
-    dir = file.read().split('\n')
+with open('config.txt', 'r', newline='') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        dir.append(row[0])
+
 new_dir = dir[1] # Директория хранения фото на ПК
 auto = dir[2] #автосмена обоев вкл или выкл
 dir = dir[0] #Директория хранения фото на сервере
-
 
 #Проверка автоматической смены изображений
 def check_auto_wallpaper():
@@ -60,42 +64,48 @@ def get_pc_info():
     ver_parser = Dispatch('Scripting.FileSystemObject')
     Crowdstrike_version = ver_parser.GetFileVersion('C:\Program Files\CrowdStrike\CSFalconContainer.exe')
     Edge_version = ver_parser.GetFileVersion('C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe')
+
     OS_Version = platform.platform(terse=True)
     IP_adress = socket.gethostbyname(Host_Name)
     Machine_Domain = socket.getfqdn().split('.', 1)[1]
     if Machine_Domain == 'wft.root.loc':
         Machine_Domain = 'WFT'
     Logon_Domain = os.environ['userdomain']
-    Logon_Server = None
-    User_name = None
+    #Logon_Server = subprocess.run("gpresult /r", encoding='utf-8')
+    Logon_Server = subprocess.check_output('nltest /dsgetdc:wft.root.loc').decode('cp866').split()[2].split('.')[0].replace('\\', '')
+    User_name = subprocess.check_output('whoami').decode('cp866').replace('\n','')
+    if User_name[0:3] == 'wft':
+        User_name = User_name[4:]
 
-    print(Host_Name)
-    print(Mother_name)
-    print(IP_adress)
-    print(Machine_Domain)
-    print(Logon_Domain)
-    print(Logon_Server)
-    print(User_name)
-    print(OS_Version)
-    print(Build_number)
-    print(OS_Build)
-    print(SCCM_version)
-    print(Edge_version)
-    print(Crowdstrike_version)
-
+    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name[:-1], OS_Version, Build_number, OS_Build, SCCM_version,Edge_version, Crowdstrike_version])
+    return param
 
 def create_image():
-    im = Image.new('RGB', (300, 400))
-    draw_text = ImageDraw.Draw(im)
-    name_param = ['Host Name', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version', 'Crowdstrike Version']
+    general_watermark = Image.new('RGB', (300, 440))
+    draw_text = ImageDraw.Draw(general_watermark)
+    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version', 'Crowdstrike Version']
+    value_param = get_pc_info()
     font = ImageFont.truetype('arial.ttf', size=13)
-    coordy = 100
+    coordy = 170
+    i = 0
     for item_param in name_param:
         draw_text.text((10, coordy), item_param, font=font)
-        draw_text.text((290, coordy+13), item_param, font=font, anchor='rs')
+        draw_text.text((290, coordy + 13), value_param[i], font=font, anchor='rs')
         coordy += 20
+        i += 1
 
-    im.show()
+    watermark = Image.open('C:/Intel/logo.jpg')
+
+    general_watermark.paste(watermark, (10, 10))
+    #general_watermark.show()
+
+    general_watermark.putalpha(128)
+    new_wallpapper = Image.open(new_dir)
+    position = (new_wallpapper.width - general_watermark.width,
+                new_wallpapper.height - general_watermark.height)
+
+    new_wallpapper.alpha_composite(general_watermark, position)
+    new_wallpapper.show()
 
 
-get_pc_info()
+create_image()
