@@ -1,9 +1,4 @@
 Pillow==9.5.0
-pycparser==2.21
-pyinstaller==5.7.0
-pyinstaller-hooks-contrib==2022.14
-pyparsing==3.0.9
-pytz==2022.6
 pywin32==306
 pywin32-ctypes==0.2.0
 winapi==0.0.0
