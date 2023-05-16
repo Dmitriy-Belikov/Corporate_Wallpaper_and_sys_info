@@ -4,19 +4,35 @@ import platform
 import socket
 import os
 import subprocess
-import config
+
 import filecmp
 import struct
 import ctypes
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from win32com.client import Dispatch
 
-config.local # Директория хранения фото на ПК
+'''config.local # Директория хранения фото на ПК
 config.auto #автосмена обоев вкл или выкл
 config.logo # Диретория хранения логотипа
 config.server #Директория хранения фото на сервере
+config.new_wallp #Директория хранения нового файла рабочего стола'''
 
-#Проверка автоматической смены изображений
+'''Создание конфигурационного файла'''
+if os.path.exists('config.py'):
+    print('Файл конфигурации успешно загружен')
+    pass
+else:
+    with open('config.py', 'a') as f:
+        f.write("server = 'C:/CSV/wallpaper.jpg'\n")
+        f.write("local = 'C:/CSV/new/wallpaper.jpg'\n")
+        f.write('auto = True\n')
+        f.write("logo = 'C:/CSV/logo.png'\n")
+        f.write("new_wallp = 'C:/CSV/new/corp_wallpaper.jpg'")
+
+import config
+
+
+'''Проверка автоматической смены изображений'''
 def check_auto_wallpaper():
     print('Проверка автосмены')
     if config.auto is True:
@@ -26,9 +42,9 @@ def check_auto_wallpaper():
                 filecmp.cmp(config.server, config.local)
                 print('Файлы одинаковые, замена не требуется')
             except:
-                print('копирую с сервера')
+                print('Копирую с сервера')
                 copy_server_to_pc_wallpaper()
-                print('создаю обои')
+                print('Создаю обои')
                 create_image(config.local)
                 pass
         else:
@@ -44,7 +60,7 @@ def check_logo_weather(): #проверка логотипа посредств�
     aKey = winreg.OpenKey(aReg, r"Control Panel\Desktop")
     keyname = winreg.QueryValueEx(aKey, 'WallPaper')[0]
     if keyname == config.new_wallp.replace('/', '\\'):
-        print('лого есть, ждем')
+        print('Лого есть, ждем')
         pass
         #Здесь ссылка на функцию ожидания 2 часа
     else:
@@ -52,9 +68,9 @@ def check_logo_weather(): #проверка логотипа посредств�
         create_image(keyname)
 #Копирование картринки с сервера
 def copy_server_to_pc_wallpaper():
-    print('проверяю доступность сервера и папки на пк')
+    print('Проверяю доступность сервера и папки на пк')
     if os.access(config.server, os.R_OK) is True and os.access(config.local, os.W_OK) is True:
-        print('копирую с сервера')
+        print('Копирую с сервера')
         shutil.copy(config.server, config.local)
     else:
         print('Доступ не получен. Вставляю лого в имеющуюся картинку')
@@ -139,8 +155,12 @@ def create_image(dir_walpp):
                 new_wallpapper.height - general_watermark.height)
     new_wallpapper.paste(general_watermark, position, mask=general_watermark.convert('RGBA'))
     new_wallpapper.save(config.new_wallp)
-    changeBG()
+    os.remove(config.local)
+    new_wallpapper.show()
+    #changeBG()
 
+'''Функция установки обоев ломает Bing Wallpaper
+Нужно исправить'''
 def changeBG():
     """Change background depending on bit size"""
     bit64 = struct.calcsize('P') * 8 == 64
