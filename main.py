@@ -22,13 +22,12 @@ if os.path.exists('config.py'):
     print('Файл конфигурации успешно загружен')
     pass
 else:
-    with open('config.py', 'a') as f:
+    with open('config.py', 'w') as f:
         f.write("server = 'C:/CSV/wallpaper.jpg'\n")
         f.write("local = 'C:/CSV/new/wallpaper.jpg'\n")
         f.write('auto = True\n')
         f.write("logo = 'C:/CSV/logo.png'\n")
         f.write("new_wallp = 'C:/CSV/new/corp_wallpaper.jpg'")
-
 import config
 
 
