@@ -10,6 +10,7 @@ import struct
 import ctypes
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from win32com.client import Dispatch
+from win32api import GetSystemMetrics
 
 '''config.local # Директория хранения фото на ПК
 config.auto #автосмена обоев вкл или выкл
@@ -35,11 +36,13 @@ import config
 def check_auto_wallpaper():
     print('Проверка автосмены')
     if config.auto is True:
+        print('Автосмена включена')
         if os.path.isfile(config.server) is True:
             try:
                 print('Сравнение фото на сервере и на пк')
                 filecmp.cmp(config.server, config.local)
                 print('Файлы одинаковые, замена не требуется')
+                check_logo_weather()
             except:
                 print('Копирую с сервера')
                 copy_server_to_pc_wallpaper()
@@ -51,6 +54,7 @@ def check_auto_wallpaper():
         #Установка обоев
         #Запуск функции ожидания 2 часа
     else:
+        print('Автосмена выключена')
         print('Проверка лого')
         check_logo_weather()
 #Проверка логотипа
@@ -133,6 +137,7 @@ def get_pc_info():
 '''Создание картинки с Watermark'''
 def create_image(dir_walpp):
     print('Создаем изображение')
+    monitor_width = GetSystemMetrics(0)
     general_watermark = Image.new('RGBA', (300, 370))
     draw_text = ImageDraw.Draw(general_watermark)
     name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version', 'Crowdstrike Version']
@@ -147,14 +152,24 @@ def create_image(dir_walpp):
         i += 1
     watermark = Image.open(config.logo)
     general_watermark.paste(watermark, (8, 8), mask=watermark.convert('RGBA'))
-    copy_server_to_pc_wallpaper()
+
     new_wallpapper = Image.open(dir_walpp)
+    #Меняем размер изображения под размер монитора
+    width_percent = (monitor_width / float(new_wallpapper.size[0]))
+    height_size = int((float(new_wallpapper.size[1]) * float(width_percent)))
+    new_wallpapper = new_wallpapper.resize((monitor_width, height_size))
     new_wallpapper.convert('RGBA')
-    position = (new_wallpapper.width - general_watermark.width,
-                new_wallpapper.height - general_watermark.height)
+    #Вычисление установки логотипа
+    position = (new_wallpapper.width - general_watermark.width - 100,
+                new_wallpapper.height - general_watermark.height - 100)
+    #Вставляем лого
     new_wallpapper.paste(general_watermark, position, mask=general_watermark.convert('RGBA'))
+    #Сохраняем изображение
     new_wallpapper.save(config.new_wallp)
-    os.remove(config.local)
+    #Удаляем временный файл
+    if os.access(config.local, os.W_OK):
+        os.remove(config.local)
+    print("Устанавливаем на рабочий стол")
     new_wallpapper.show()
     #changeBG()
 
@@ -169,5 +184,6 @@ def changeBG():
     else:
         ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, config.new_wallp, 3)
     print('Обои установлены')
+
 
 check_auto_wallpaper()
