@@ -118,8 +118,8 @@ def get_pc_info():
         IP_adress = 'None'
     try:
         Machine_Domain = socket.getfqdn().split('.', 1)[1]
-        if Machine_Domain == 'wft.root.loc':
-            Machine_Domain = 'WFT'
+        if Machine_Domain == 'DOMAIN_COMPANY':
+            Machine_Domain = 'DOMAIN_COMPANY'
         Logon_Domain = os.environ['userdomain']
     except:
         Machine_Domain = 'None'
