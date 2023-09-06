@@ -1,3 +1,4 @@
+import time
 import winreg
 import shutil
 import platform
@@ -26,9 +27,11 @@ else:
     with open('config.py', 'w') as f:
         f.write("server = 'C:/CSV/wallpaper.jpg'\n")
         f.write("local = 'C:/CSV/new/wallpaper.jpg'\n")
-        f.write('auto = True\n')
-        f.write("logo = 'C:/CSV/logo.png'\n")
-        f.write("new_wallp = 'C:/CSV/new/corp_wallpaper.jpg'")
+        f.write('auto = False\n')
+        f.write("logo = 'C:/CSV/logo.jpg'\n")
+        f.write("new_wallp = 'C:/CSV/corp_wallpaper.jpg'")
+        time.sleep(2)
+
 import config
 
 
@@ -118,21 +121,21 @@ def get_pc_info():
         IP_adress = 'None'
     try:
         Machine_Domain = socket.getfqdn().split('.', 1)[1]
-        if Machine_Domain == 'DOMAIN_COMPANY':
-            Machine_Domain = 'DOMAIN_COMPANY'
+        if Machine_Domain == 'ent.techofs.com':
+            Machine_Domain = 'TECHOFS'
         Logon_Domain = os.environ['userdomain']
     except:
+        Logon_Domain = 'None'
         Machine_Domain = 'None'
     try:
-        Logon_Server = subprocess.check_output('nltest /dsgetdc:wft.root.loc').decode('cp866').split()[2].split('.')[0].replace('\\', '')
+        Logon_Server = subprocess.check_output('nltest /dsgetdc:ent.techofs.com').decode('cp866').split()[2].split('.')[0].replace('\\', '')
     except:
         Logon_Server = 'None'
     User_name = subprocess.check_output('whoami').decode('cp866').replace('\n', '')
-    if User_name[0:3] == 'wft':
-        User_name = User_name[4:]
-        if User_name[0] == 'e':
-            User_name = User_name[0:7]
-    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version, Crowdstrike_version])
+    symb = User_name.find('\\')
+    User_name = User_name[symb+1:]
+
+    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version])
     return param
 '''Создание картинки с Watermark'''
 def create_image(dir_walpp):
@@ -140,18 +143,18 @@ def create_image(dir_walpp):
     monitor_width = GetSystemMetrics(0)
     general_watermark = Image.new('RGBA', (300, 370))
     draw_text = ImageDraw.Draw(general_watermark)
-    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version', 'Crowdstrike Version']
+    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version']
     value_param = get_pc_info()
     font = ImageFont.truetype('arial.ttf', size=15)
     coordy = 170
     i = 0
     for item_param in name_param:
         draw_text.text((10, coordy), item_param, font=font, stroke_width=1, stroke_fill="black")
-        draw_text.text((290, coordy + 13), value_param[i], font=font, anchor='rs', stroke_width=1, stroke_fill="black")
+        draw_text.text((300, coordy + 13), value_param[i], font=font, anchor='rs', stroke_width=1, stroke_fill="black")
         coordy += 15
         i += 1
     watermark = Image.open(config.logo)
-    general_watermark.paste(watermark, (8, 8), mask=watermark.convert('RGBA'))
+    general_watermark.paste(watermark, (8, 80), mask=watermark.convert('RGBA'))
 
     new_wallpapper = Image.open(dir_walpp)
     #Меняем размер изображения под размер монитора
@@ -160,8 +163,8 @@ def create_image(dir_walpp):
     new_wallpapper = new_wallpapper.resize((monitor_width, height_size))
     new_wallpapper.convert('RGBA')
     #Вычисление установки логотипа
-    position = (new_wallpapper.width - general_watermark.width - 100,
-                new_wallpapper.height - general_watermark.height - 100)
+    position = (new_wallpapper.width - general_watermark.width - 50,
+                new_wallpapper.height - general_watermark.height - 50)
     #Вставляем лого
     new_wallpapper.paste(general_watermark, position, mask=general_watermark.convert('RGBA'))
     #Сохраняем изображение
@@ -169,12 +172,12 @@ def create_image(dir_walpp):
     #Удаляем временный файл
     if os.access(config.local, os.W_OK):
         os.remove(config.local)
-    print("Устанавливаем на рабочий стол")
     new_wallpapper.show()
     #changeBG()
 
 '''Функция установки обоев ломает Bing Wallpaper
 Нужно исправить'''
+print("Устанавливаем на рабочий стол")
 def changeBG():
     """Change background depending on bit size"""
     bit64 = struct.calcsize('P') * 8 == 64
