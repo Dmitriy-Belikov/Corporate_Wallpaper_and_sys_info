@@ -27,7 +27,7 @@ def new_config():
     with open('config.py', 'w') as f:
         f.write("server = 'C:/PS/server_wallp.jpg'\n") #Директория хранения фото на сервере
         f.write("local = 'C:/PS/local_wallp.jpg'\n") #Директория хранения фото на ПК
-        f.write('auto = False\n') #автосмена обоев вкл или выкл
+        f.write('auto = True\n') #автосмена обоев вкл или выкл
         f.write("logo = 'OFS.JPG'\n") # Диретория хранения логотипа
         f.write("new_wallp = 'C:/PS/corp_wallpaper.jpg'") #Директория хранения нового файла рабочего стола
 
