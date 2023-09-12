@@ -11,7 +11,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from win32com.client import Dispatch
 from win32api import GetSystemMetrics
 from tqdm import tqdm
-import bing_wallpaper
+from xml.dom import minidom
+from urllib.request import urlopen, urlretrieve
 
 
 '''Функция создания конфига'''
@@ -25,11 +26,17 @@ def new_config():
     '''
 
     with open('config.py', 'w') as f:
-        f.write("server = 'C:/PS/server_wallp.jpg'\n") #Директория хранения фото на сервере
+        #f.write("server = 'C:/PS/server_wallp.jpg'\n") #Директория хранения фото на сервере
+        f.write("local = 'local_wallp.jpg'\n") #Директория хранения фото на ПК
+        f.write('auto = True\n') #автосмена обоев вкл или выкл
+        f.write("logo = 'OFS.JPG'\n") # Диретория хранения логотипа
+        f.write("new_wallp = 'corp_wallpaper.jpg'") #Директория хранения нового файла рабочего стола
+        '''
         f.write("local = 'C:/PS/local_wallp.jpg'\n") #Директория хранения фото на ПК
         f.write('auto = True\n') #автосмена обоев вкл или выкл
         f.write("logo = 'OFS.JPG'\n") # Диретория хранения логотипа
         f.write("new_wallp = 'C:/PS/corp_wallpaper.jpg'") #Директория хранения нового файла рабочего стола
+        '''
 
 '''Проверка автоматической смены изображений'''
 def check_auto_wallpaper():
@@ -62,8 +69,54 @@ def check_logo_weather(): #проверка логотипа посредств�
         print('Лого нет, создаем лого')
         create_image(keyname)
 #Копирование картринки с сервера
+def join_path(*args):
+    # Takes an list of values or multiple values and returns an valid path.
+    if isinstance(args[0], list):
+        path_list = args[0]
+    else:
+        path_list = args
+    val = [str(v).strip(' ') for v in path_list]
+    return os.path.normpath('/'.join(val))
+'''
+dir_path = os.path.dirname(os.path.realpath(__file__))
+save_dir = join_path(dir_path, 'images')
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)'''
+def download_wallpaper(idx=0, use_wallpaper=True):
+    # Getting the XML File
+    try:
+        usock = urlopen(''.join(['http://www.bing.com/HPImageArchive.aspx?format=xml&idx=',
+                                 str(idx), '&n=1&mkt=ru-RU']))  # ru-RU, because they always have 1920x1200 resolution
+    except Exception as e:
+        #print('Error while downloading #', idx, e)
+        return
+    try:
+        xmldoc = minidom.parse(usock)
+    # This is raised when there is trouble finding the image url.
+    except Exception as e:
+        #print('Error while processing XML index #', idx, e)
+        return
+    # Parsing the XML File
+    for element in xmldoc.getElementsByTagName('url'):
+        url = 'http://www.bing.com' + element.firstChild.nodeValue
+        # Get Current Date as fileName for the downloaded Picture
+        now = datetime.datetime.now()
+        date = now - datetime.timedelta(days=int(idx))
+        pic_path = join_path(config.local)
+
+        '''if os.path.isfile(pic_path):
+            print('Image of', date.strftime('%d-%m-%Y'), 'already downloaded.')
+            if use_wallpaper:
+                set_wallpaper(pic_path)
+            return
+        print('Downloading: ', date.strftime('%d-%m-%Y'), 'index #', idx)'''
+
+        # Download and Save the Picture
+        # Get a higher resolution by replacing the file name
+        urlretrieve(url.replace('_1366x768', '_1920x1200'), pic_path)
+        # Set Wallpaper if wanted by user
 def copy_server_to_pc_wallpaper():
-    bing_wallpaper.download_wallpaper()
+    download_wallpaper()
 
     '''
     print('Проверяю доступность сервера и папки на пк')
