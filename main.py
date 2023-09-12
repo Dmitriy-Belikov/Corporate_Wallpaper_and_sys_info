@@ -5,6 +5,7 @@ import platform
 import socket
 import os
 import subprocess
+import datetime
 
 import filecmp
 import struct
@@ -13,11 +14,13 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from win32com.client import Dispatch
 from win32api import GetSystemMetrics
 
-'''config.local # Директория хранения фото на ПК
+'''
+config.server #Директория хранения фото на сервере
+config.local # Директория хранения фото на ПК
 config.auto #автосмена обоев вкл или выкл
 config.logo # Диретория хранения логотипа
-config.server #Директория хранения фото на сервере
-config.new_wallp #Директория хранения нового файла рабочего стола'''
+config.new_wallp #Директория хранения нового файла рабочего стола
+'''
 
 '''Создание конфигурационного файла'''
 if os.path.exists('config.py'):
@@ -25,11 +28,11 @@ if os.path.exists('config.py'):
     pass
 else:
     with open('config.py', 'w') as f:
-        f.write("server = 'C:/CSV/wallpaper.jpg'\n")
-        f.write("local = 'C:/CSV/new/wallpaper.jpg'\n")
-        f.write('auto = False\n')
-        f.write("logo = 'C:/CSV/logo.jpg'\n")
-        f.write("new_wallp = 'C:/CSV/corp_wallpaper.jpg'")
+        f.write("server = 'C:/PS/server_wallp.jpg'\n") #Директория хранения фото на сервере
+        f.write("local = 'C:/PS/local_wallp.jpg'\n") #Директория хранения фото на ПК
+        f.write('auto = False\n') #автосмена обоев вкл или выкл
+        f.write("logo = 'OFS.JPG'\n") # Диретория хранения логотипа
+        f.write("new_wallp = 'C:/PS/corp_wallpaper.jpg'") #Директория хранения нового файла рабочего стола
         time.sleep(2)
 
 import config
@@ -96,29 +99,45 @@ def get_pc_info():
     '''Запросы из регистра, версии программ и скрипты запроса нужной информации'''
     aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
     aKey = winreg.OpenKey(aReg, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+    '''Версия SCCM'''
     try:
         aSCCM_version = winreg.OpenKey(aReg, r'SOFTWARE\Microsoft\SMS\Mobile Client')
         SCCM_version = winreg.QueryValueEx(aSCCM_version, 'SmsClientVersion')[0]
     except:
         SCCM_version = 'None'
+    '''#Номер сборки'''
     Build_number = winreg.QueryValueEx(aKey, 'CurrentBuildNumber')[0] #Build Number
+    '''#Версия системы'''
     OS_Build = winreg.QueryValueEx(aKey, 'DisplayVersion')[0] #OS Build
+    '''#Имя ПК'''
     Host_Name = platform.node()
+    '''#Сервис таг'''
     Mother_name = subprocess.check_output("wmic bios get serialnumber").decode().split()[1]
+    '''#Узнаем Uptime PC'''
+    time_start = subprocess.check_output('powershell Get-CimInstance Win32_OperatingSystem | select LastBootUpTime').decode().split('--------------')[1]
+    time_start = time_start.replace("\r", '').replace("\n",'').replace(' ', '')
+    time_start = datetime.datetime.strptime(str(time_start), '%d.%m.%Y%H:%M:%S')
+    Uptime = datetime.datetime.now() - time_start
+    Uptime = str(Uptime)[:str(Uptime).find('.')]
+    '''#Версия антивируса Crowdstrike'''
     try:
         ver_parser = Dispatch('Scripting.FileSystemObject')
         Crowdstrike_version = ver_parser.GetFileVersion('C:\Program Files\CrowdStrike\CSFalconContainer.exe')
     except:
         Crowdstrike_version = 'None'
+    '''#Версия MS Edge '''
     try:
         Edge_version = ver_parser.GetFileVersion('C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe')
     except:
         Edge_version = 'None'
+    '''#Версия ОС'''
     OS_Version = platform.platform(terse=True)
+    '''#Ip адрес'''
     try:
         IP_adress = socket.gethostbyname(Host_Name)
     except:
         IP_adress = 'None'
+    '''#Домен в котором состоит машина'''
     try:
         Machine_Domain = socket.getfqdn().split('.', 1)[1]
         if Machine_Domain == 'ent.techofs.com':
@@ -127,15 +146,17 @@ def get_pc_info():
     except:
         Logon_Domain = 'None'
         Machine_Domain = 'None'
+    '''#Домен к которому подключен ПК'''
     try:
         Logon_Server = subprocess.check_output('nltest /dsgetdc:ent.techofs.com').decode('cp866').split()[2].split('.')[0].replace('\\', '')
     except:
         Logon_Server = 'None'
+    '''#имя пользователя'''
     User_name = subprocess.check_output('whoami').decode('cp866').replace('\n', '')
     symb = User_name.find('\\')
     User_name = User_name[symb+1:]
-
-    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version])
+    '''#Собираем список параметров полученных выше и передаем в функцию создания watermark'''
+    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version, Uptime])
     return param
 '''Создание картинки с Watermark'''
 def create_image(dir_walpp):
@@ -143,17 +164,26 @@ def create_image(dir_walpp):
     monitor_width = GetSystemMetrics(0)
     general_watermark = Image.new('RGBA', (300, 370))
     draw_text = ImageDraw.Draw(general_watermark)
-    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version']
+    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version', 'Uptime']
     value_param = get_pc_info()
     font = ImageFont.truetype('arial.ttf', size=15)
     coordy = 170
     i = 0
     for item_param in name_param:
         draw_text.text((10, coordy), item_param, font=font, stroke_width=1, stroke_fill="black")
-        draw_text.text((300, coordy + 13), value_param[i], font=font, anchor='rs', stroke_width=1, stroke_fill="black")
+        draw_text.text((295, coordy + 13), value_param[i], font=font, anchor='rs', stroke_width=1, stroke_fill="black")
         coordy += 15
         i += 1
+    #подгоняем логотип к размеру watermark
+    new_width = 290
     watermark = Image.open(config.logo)
+    # определение соотношения сторон
+    width, height = watermark.size
+    new_height = int(new_width * height / width)
+    watermark = watermark.resize((new_width, new_height))
+
+
+
     general_watermark.paste(watermark, (8, 80), mask=watermark.convert('RGBA'))
 
     new_wallpapper = Image.open(dir_walpp)
@@ -173,19 +203,24 @@ def create_image(dir_walpp):
     if os.access(config.local, os.W_OK):
         os.remove(config.local)
     new_wallpapper.show()
-    #changeBG()
+    changeBG()
 
 '''Функция установки обоев ломает Bing Wallpaper
 Нужно исправить'''
 print("Устанавливаем на рабочий стол")
 def changeBG():
+
+    img = Image.open(config.new_wallp)
+    img = img.tobitmap()
+
+
     """Change background depending on bit size"""
     bit64 = struct.calcsize('P') * 8 == 64
     SPI_SETDESKWALLPAPER = 20
     if bit64 is True:
-        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, config.new_wallp, 3)
+        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, img, 3)
     else:
-        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, config.new_wallp, 3)
+        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, img, 3)
     print('Обои установлены')
 
 
