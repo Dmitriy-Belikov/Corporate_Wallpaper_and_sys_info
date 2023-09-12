@@ -36,24 +36,26 @@ def check_auto_wallpaper():
     print('Проверка автосмены')
     if config.auto is True:
         print('Автосмена включена')
-        try:
-            copy_server_to_pc_wallpaper()
-        except:
+        print('Скачиваем изображение')
+        copy_server_to_pc_wallpaper()
+        if os.path.exists(config.local):
+            create_image(config.local)
+        else:
+            print('Не удалось скачать изображение')
             check_logo_weather()
-        create_image(config.local)
-        #Установка обоев
-        #Запуск функции ожидания 2 часа
     else:
         print('Автосмена выключена')
-
         check_logo_weather()
-#Проверка логотипа
-def check_logo_weather(): #проверка логотипа посредством нахождения фото в папке
-    print('Проверка логотипа')
+def wallpaper():
     aReg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
     aKey = winreg.OpenKey(aReg, r"Control Panel\Desktop")
     keyname = winreg.QueryValueEx(aKey, 'WallPaper')[0]
-    if keyname == config.new_wallp.replace('/', '\\'):
+    return keyname
+#Проверка логотипа
+def check_logo_weather(): #проверка логотипа посредством нахождения фото в папке
+    print('Проверка логотипа')
+    keyname = wallpaper()
+    if keyname == config.new_wallp:
         print('Лого есть, ждем')
         #Здесь ссылка на функцию ожидания 2 часа
     else:
@@ -62,6 +64,7 @@ def check_logo_weather(): #проверка логотипа посредств�
 #Копирование картринки с сервера
 def copy_server_to_pc_wallpaper():
     bing_wallpaper.download_wallpaper()
+
     '''
     print('Проверяю доступность сервера и папки на пк')
     if os.access(config.server, os.R_OK) is True and os.access(config.local, os.W_OK) is True:
