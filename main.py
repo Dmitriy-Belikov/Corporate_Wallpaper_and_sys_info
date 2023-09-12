@@ -1,82 +1,68 @@
 import time
 import winreg
-import shutil
 import platform
 import socket
 import os
 import subprocess
 import datetime
-
-import filecmp
 import struct
 import ctypes
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from win32com.client import Dispatch
 from win32api import GetSystemMetrics
+from tqdm import tqdm
+import bing_wallpaper
 
-'''
-config.server #Директория хранения фото на сервере
-config.local # Директория хранения фото на ПК
-config.auto #автосмена обоев вкл или выкл
-config.logo # Диретория хранения логотипа
-config.new_wallp #Директория хранения нового файла рабочего стола
-'''
 
-'''Создание конфигурационного файла'''
-if os.path.exists('config.py'):
-    print('Файл конфигурации успешно загружен')
-    pass
-else:
+'''Функция создания конфига'''
+def new_config():
+    '''
+    config.server #Директория хранения фото на сервере
+    config.local # Директория хранения фото на ПК
+    config.auto #автосмена обоев вкл или выкл
+    config.logo # Диретория хранения логотипа
+    config.new_wallp #Директория хранения нового файла рабочего стола
+    '''
+
     with open('config.py', 'w') as f:
         f.write("server = 'C:/PS/server_wallp.jpg'\n") #Директория хранения фото на сервере
         f.write("local = 'C:/PS/local_wallp.jpg'\n") #Директория хранения фото на ПК
         f.write('auto = False\n') #автосмена обоев вкл или выкл
         f.write("logo = 'OFS.JPG'\n") # Диретория хранения логотипа
         f.write("new_wallp = 'C:/PS/corp_wallpaper.jpg'") #Директория хранения нового файла рабочего стола
-        time.sleep(2)
-
-import config
-
 
 '''Проверка автоматической смены изображений'''
 def check_auto_wallpaper():
     print('Проверка автосмены')
     if config.auto is True:
         print('Автосмена включена')
-        if os.path.isfile(config.server) is True:
-            try:
-                print('Сравнение фото на сервере и на пк')
-                filecmp.cmp(config.server, config.local)
-                print('Файлы одинаковые, замена не требуется')
-                check_logo_weather()
-            except:
-                print('Копирую с сервера')
-                copy_server_to_pc_wallpaper()
-                print('Создаю обои')
-                create_image(config.local)
-                pass
-        else:
-            pass
+        try:
+            copy_server_to_pc_wallpaper()
+        except:
+            check_logo_weather()
+        create_image(config.local)
         #Установка обоев
         #Запуск функции ожидания 2 часа
     else:
         print('Автосмена выключена')
-        print('Проверка лого')
+
         check_logo_weather()
 #Проверка логотипа
 def check_logo_weather(): #проверка логотипа посредством нахождения фото в папке
+    print('Проверка логотипа')
     aReg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
     aKey = winreg.OpenKey(aReg, r"Control Panel\Desktop")
     keyname = winreg.QueryValueEx(aKey, 'WallPaper')[0]
     if keyname == config.new_wallp.replace('/', '\\'):
         print('Лого есть, ждем')
-        pass
         #Здесь ссылка на функцию ожидания 2 часа
     else:
         print('Лого нет, создаем лого')
         create_image(keyname)
 #Копирование картринки с сервера
 def copy_server_to_pc_wallpaper():
+    bing_wallpaper.download_wallpaper()
+    '''
     print('Проверяю доступность сервера и папки на пк')
     if os.access(config.server, os.R_OK) is True and os.access(config.local, os.W_OK) is True:
         print('Копирую с сервера')
@@ -90,7 +76,7 @@ def copy_server_to_pc_wallpaper():
             shutil.copy(wallpaper_user, config.local)
         except:
             print('файл не найден, копирую новую картинку с сервера')
-            shutil.copy(config.server, config.local)
+            shutil.copy(config.server, config.local)'''
 '''Запрос информации о ПК'''
 def get_pc_info():
     print('Запрос информации о ПК')
@@ -181,11 +167,8 @@ def create_image(dir_walpp):
     width, height = watermark.size
     new_height = int(new_width * height / width)
     watermark = watermark.resize((new_width, new_height))
-
-
-
+    #Вставляем лого в вотермарк
     general_watermark.paste(watermark, (8, 80), mask=watermark.convert('RGBA'))
-
     new_wallpapper = Image.open(dir_walpp)
     #Меняем размер изображения под размер монитора
     width_percent = (monitor_width / float(new_wallpapper.size[0]))
@@ -202,26 +185,36 @@ def create_image(dir_walpp):
     #Удаляем временный файл
     if os.access(config.local, os.W_OK):
         os.remove(config.local)
-    new_wallpapper.show()
+    #new_wallpapper.show()
+
     changeBG()
 
-'''Функция установки обоев ломает Bing Wallpaper
-Нужно исправить'''
-print("Устанавливаем на рабочий стол")
 def changeBG():
-
-    img = Image.open(config.new_wallp)
-    img = img.tobitmap()
-
-
-    """Change background depending on bit size"""
+    print("Устанавливаем на рабочий стол")
+    """Проверка разрядности системы"""
     bit64 = struct.calcsize('P') * 8 == 64
     SPI_SETDESKWALLPAPER = 20
     if bit64 is True:
-        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, img, 3)
+        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, config.new_wallp, 3)
     else:
-        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, img, 3)
+        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, config.new_wallp, 3)
     print('Обои установлены')
 
 
-check_auto_wallpaper()
+
+
+if __name__ == "__main__":
+    '''Проверка наличия конфигурационного файла'''
+    if os.path.exists('config.py'):
+        print('Файл конфигурации успешно загружен')
+        import config
+    else:
+        new_config()
+        time.sleep(2)
+    import config
+
+    while True:
+        check_auto_wallpaper()
+        print('Время до следующей смены обоев')
+        for i in tqdm(range(3600)):
+            time.sleep(1)
