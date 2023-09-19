@@ -14,15 +14,16 @@
 Для отключения необходимо изменить True на False.
 
 При создании watermark указываются следующие данные:
-Host Name
-Serial Number
-IP Adress
-Machine Domain
-Logon Domain
-Logon Server
-User Name
-OS Version
-Build Number
-OS Build
-SCCM Client Version
-Edge Version
+
+    Host Name
+    Serial Number
+    IP Adress
+    Machine Domain
+    Logon Domain
+    Logon Server
+    User Name
+    OS Version
+    Build Number
+    OS Build
+    SCCM Client Version
+    Edge Version
