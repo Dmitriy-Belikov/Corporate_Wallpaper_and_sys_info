@@ -7,67 +7,58 @@ import subprocess
 import datetime
 import struct
 import ctypes
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import configparser
+from PIL import Image, ImageDraw, ImageFont
 from win32com.client import Dispatch
 from win32api import GetSystemMetrics
-from tqdm import tqdm
 from xml.dom import minidom
 from urllib.request import urlopen, urlretrieve
 
 
 '''Функция создания конфига'''
 def new_config():
-    '''
-    config.server #Директория хранения фото на сервере
-    config.local # Директория хранения фото на ПК
-    config.auto #автосмена обоев вкл или выкл
-    config.logo # Диретория хранения логотипа
-    config.new_wallp #Директория хранения нового файла рабочего стола
-    '''
-
-    with open('config.py', 'w') as f:
-        #f.write("server = 'C:/PS/server_wallp.jpg'\n") #Директория хранения фото на сервере
-        f.write("local = 'local_wallp.jpg'\n") #Директория хранения фото на ПК
+    with open('config.ini', 'w') as f:
+        f.write('[DEFAULT]')
+        f.write("local = local_wallp.jpg\n") #Директория хранения фото на ПК
         f.write('auto = True\n') #автосмена обоев вкл или выкл
-        f.write("logo = 'OFS.JPG'\n") # Диретория хранения логотипа
-        f.write("new_wallp = 'corp_wallpaper.jpg'") #Директория хранения нового файла рабочего стола
-        '''
-        f.write("local = 'C:/PS/local_wallp.jpg'\n") #Директория хранения фото на ПК
-        f.write('auto = True\n') #автосмена обоев вкл или выкл
-        f.write("logo = 'OFS.JPG'\n") # Диретория хранения логотипа
-        f.write("new_wallp = 'C:/PS/corp_wallpaper.jpg'") #Директория хранения нового файла рабочего стола
-        '''
+        f.write("logo = OFS.JPG\n") # Диретория хранения логотипа
+        f.write("new_wallp = corp_wallpaper.jpg\n") #Директория хранения нового файла рабочего стола
+        f.write("config = config.ini")
 
 '''Проверка автоматической смены изображений'''
 def check_auto_wallpaper():
-    print('Проверка автосмены')
-    if config.auto is True:
-        print('Автосмена включена')
-        print('Скачиваем изображение')
-        copy_server_to_pc_wallpaper()
-        if os.path.exists(config.local):
-            create_image(config.local)
+    #print('Проверка автосмены')
+    if cauto == 'True':
+        #print('Автосмена включена')
+        #print('Скачиваем изображение')
+        download_wallpaper()
+        if os.path.exists(clocal):
+            create_image(clocal)
         else:
-            print('Не удалось скачать изображение')
+            #print('Не удалось скачать изображение')
             check_logo_weather()
     else:
-        print('Автосмена выключена')
+        #print('Автосмена выключена')
         check_logo_weather()
 def wallpaper():
     aReg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
     aKey = winreg.OpenKey(aReg, r"Control Panel\Desktop")
     keyname = winreg.QueryValueEx(aKey, 'WallPaper')[0]
     return keyname
+
+
 #Проверка логотипа
 def check_logo_weather(): #проверка логотипа посредством нахождения фото в папке
-    print('Проверка логотипа')
+    #print('Проверка логотипа')
     keyname = wallpaper()
-    if keyname == config.new_wallp:
-        print('Лого есть, ждем')
+    if keyname == cnew_wallp:
+        pass
+        #print('Лого есть, ждем')
         #Здесь ссылка на функцию ожидания 2 часа
     else:
-        print('Лого нет, создаем лого')
+        #print('Лого нет, создаем лого')
         create_image(keyname)
+
 #Копирование картринки с сервера
 def join_path(*args):
     # Takes an list of values or multiple values and returns an valid path.
@@ -102,7 +93,7 @@ def download_wallpaper(idx=0, use_wallpaper=True):
         # Get Current Date as fileName for the downloaded Picture
         now = datetime.datetime.now()
         date = now - datetime.timedelta(days=int(idx))
-        pic_path = join_path(config.local)
+        pic_path = join_path(clocal)
 
         '''if os.path.isfile(pic_path):
             print('Image of', date.strftime('%d-%m-%Y'), 'already downloaded.')
@@ -115,27 +106,10 @@ def download_wallpaper(idx=0, use_wallpaper=True):
         # Get a higher resolution by replacing the file name
         urlretrieve(url.replace('_1366x768', '_1920x1200'), pic_path)
         # Set Wallpaper if wanted by user
-def copy_server_to_pc_wallpaper():
-    download_wallpaper()
 
-    '''
-    print('Проверяю доступность сервера и папки на пк')
-    if os.access(config.server, os.R_OK) is True and os.access(config.local, os.W_OK) is True:
-        print('Копирую с сервера')
-        shutil.copy(config.server, config.local)
-    else:
-        print('Доступ не получен. Вставляю лого в имеющуюся картинку')
-        wallREG = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-        awallREG = winreg.OpenKey(wallREG, r"Control Panel\Desktop")
-        wallpaper_user = winreg.QueryValueEx(awallREG, 'WallPaper')[0].replace('\\\\', '\\')
-        try:
-            shutil.copy(wallpaper_user, config.local)
-        except:
-            print('файл не найден, копирую новую картинку с сервера')
-            shutil.copy(config.server, config.local)'''
 '''Запрос информации о ПК'''
 def get_pc_info():
-    print('Запрос информации о ПК')
+    #print('Запрос информации о ПК')
     '''Список для параметров'''
     param = []
     '''Запросы из регистра, версии программ и скрипты запроса нужной информации'''
@@ -161,12 +135,13 @@ def get_pc_info():
     time_start = datetime.datetime.strptime(str(time_start), '%d.%m.%Y%H:%M:%S')
     Uptime = datetime.datetime.now() - time_start
     Uptime = str(Uptime)[:str(Uptime).find('.')]
-    '''#Версия антивируса Crowdstrike'''
+    ver_parser = Dispatch('Scripting.FileSystemObject')
+    '''#Версия антивируса Crowdstrike
     try:
-        ver_parser = Dispatch('Scripting.FileSystemObject')
         Crowdstrike_version = ver_parser.GetFileVersion('C:\Program Files\CrowdStrike\CSFalconContainer.exe')
     except:
         Crowdstrike_version = 'None'
+        '''
     '''#Версия MS Edge '''
     try:
         Edge_version = ver_parser.GetFileVersion('C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe')
@@ -198,15 +173,19 @@ def get_pc_info():
     symb = User_name.find('\\')
     User_name = User_name[symb+1:]
     '''#Собираем список параметров полученных выше и передаем в функцию создания watermark'''
-    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version, Uptime])
+    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version])
     return param
 '''Создание картинки с Watermark'''
 def create_image(dir_walpp):
-    print('Создаем изображение')
+    if os.path.exists(dir_walpp):
+        dir_walpp = dir_walpp
+    else:
+        dir_walpp = "c:\windows\web\wallpaper\windows\img0.jpg"
+    #print('Создаем изображение')
     monitor_width = GetSystemMetrics(0)
     general_watermark = Image.new('RGBA', (300, 370))
     draw_text = ImageDraw.Draw(general_watermark)
-    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version', 'Uptime']
+    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version']
     value_param = get_pc_info()
     font = ImageFont.truetype('arial.ttf', size=15)
     coordy = 170
@@ -218,13 +197,21 @@ def create_image(dir_walpp):
         i += 1
     #подгоняем логотип к размеру watermark
     new_width = 290
-    watermark = Image.open(config.logo)
-    # определение соотношения сторон
-    width, height = watermark.size
-    new_height = int(new_width * height / width)
-    watermark = watermark.resize((new_width, new_height))
+    try:
+        watermark = Image.open(clogo)
+        #определение соотношения сторон
+        width, height = watermark.size
+        new_height = int(new_width * height / width)
+        watermark = watermark.resize((new_width, new_height))
+    except:
+        pass
+
     #Вставляем лого в вотермарк
-    general_watermark.paste(watermark, (8, 80), mask=watermark.convert('RGBA'))
+    #print(dir_walpp)
+    try:
+        general_watermark.paste(watermark, (8, 80), mask=watermark.convert('RGBA'))
+    except:
+        pass
     new_wallpapper = Image.open(dir_walpp)
     #Меняем размер изображения под размер монитора
     width_percent = (monitor_width / float(new_wallpapper.size[0]))
@@ -237,40 +224,45 @@ def create_image(dir_walpp):
     #Вставляем лого
     new_wallpapper.paste(general_watermark, position, mask=general_watermark.convert('RGBA'))
     #Сохраняем изображение
-    new_wallpapper.save(config.new_wallp)
+    new_wallpapper.save(cnew_wallp)
     #Удаляем временный файл
-    if os.access(config.local, os.W_OK):
-        os.remove(config.local)
+    if os.access(clocal, os.W_OK):
+        os.remove(clocal)
     #new_wallpapper.show()
 
     changeBG()
 
 def changeBG():
-    print("Устанавливаем на рабочий стол")
+    #print("Устанавливаем на рабочий стол")
     """Проверка разрядности системы"""
     bit64 = struct.calcsize('P') * 8 == 64
     SPI_SETDESKWALLPAPER = 20
+    corp_wllp = os.path.abspath(cnew_wallp)
     if bit64 is True:
-        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, config.new_wallp, 3)
+        ctypes.windll.user32.SystemParametersInfoW(SPI_SETDESKWALLPAPER, 0, corp_wllp, 3)
     else:
-        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, config.new_wallp, 3)
-    print('Обои установлены')
+        ctypes.windll.user32.SystemParametersInfoA(SPI_SETDESKWALLPAPER, 0, corp_wllp, 3)
+    #print('Обои установлены')
 
-
+def read_conf():
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    clocal = config['DEFAULT']['local']
+    cauto = config['DEFAULT']['auto']
+    clogo = config['DEFAULT']['logo']
+    cnew_wallp = config['DEFAULT']['new_wallp']
+    cconfig = config['DEFAULT']['config']
+    return clocal, cauto, clogo, cnew_wallp, cconfig
 
 
 if __name__ == "__main__":
     '''Проверка наличия конфигурационного файла'''
-    if os.path.exists('config.py'):
-        print('Файл конфигурации успешно загружен')
-        import config
+    if os.path.exists('config.ini'):
+        pass
+        #print('Файл конфигурации успешно загружен')
     else:
         new_config()
         time.sleep(2)
-    import config
+    clocal, cauto, clogo, cnew_wallp, cconfig = read_conf()
+    check_auto_wallpaper()
 
-    while True:
-        check_auto_wallpaper()
-        print('Время до следующей смены обоев')
-        for i in tqdm(range(3600)):
-            time.sleep(1)
