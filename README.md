@@ -1,6 +1,7 @@
 # Corporate_Wallpaper_and_sys_info
 Скрипт для установки watermark на изображение рабочего стола.
 При первом запуске будет создан файл конфигурации config.ini
+
     [DEFAULT]
     local = local.jpg # Директория хранения фото на ПК
     auto = True #автосмена обоев вкл или выкл
