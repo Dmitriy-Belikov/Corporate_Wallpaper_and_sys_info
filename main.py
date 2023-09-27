@@ -17,12 +17,14 @@ from urllib.request import urlopen, urlretrieve
 
 '''Функция создания конфига'''
 def new_config():
-    with open('config.ini', 'w') as f:
-        f.write('[DEFAULT]')
-        f.write("local = local_wallp.jpg\n") #Директория хранения фото на ПК
+    homepath = os.getenv('USERPROFILE')
+    os.mkdir(f'{homepath}\AppData\Local\corpwalp')
+    with open(f'{homepath}\AppData\Local\corpwalp\config.ini', 'w') as f:
+        f.write('[DEFAULT]\n')
+        f.write(f"local = {homepath}\AppData\Local\corpwalp\local_wallp.jpg\n") #Директория хранения фото на ПК
         f.write('auto = True\n') #автосмена обоев вкл или выкл
         f.write("logo = OFS.JPG\n") # Диретория хранения логотипа
-        f.write("new_wallp = corp_wallpaper.jpg\n") #Директория хранения нового файла рабочего стола
+        f.write(f"new_wallp = {homepath}\AppData\Local\corpwalp\corp_wallpaper.jpg\n") #Директория хранения нового файла рабочего стола
         f.write("config = config.ini")
 
 '''Проверка автоматической смены изображений'''
@@ -245,8 +247,10 @@ def changeBG():
     #print('Обои установлены')
 
 def read_conf():
+    homepath = os.getenv('USERPROFILE')
     config = configparser.ConfigParser()
-    config.read('config.ini')
+    conf_file = f'{homepath}\AppData\Local\corpwalp\config.ini'
+    config.read(conf_file)
     clocal = config['DEFAULT']['local']
     cauto = config['DEFAULT']['auto']
     clogo = config['DEFAULT']['logo']
@@ -256,13 +260,16 @@ def read_conf():
 
 
 if __name__ == "__main__":
+    homepath = os.getenv('USERPROFILE')
     '''Проверка наличия конфигурационного файла'''
-    if os.path.exists('config.ini'):
+    if os.path.exists(f'{homepath}\AppData\Local\corpwalp\config.ini'):
         pass
         #print('Файл конфигурации успешно загружен')
     else:
         new_config()
         time.sleep(2)
     clocal, cauto, clogo, cnew_wallp, cconfig = read_conf()
-    check_auto_wallpaper()
+    while True:
+        check_auto_wallpaper()
+        time.sleep(3600)
 
