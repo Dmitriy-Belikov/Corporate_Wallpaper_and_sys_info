@@ -17,14 +17,12 @@ from urllib.request import urlopen, urlretrieve
 
 '''Функция создания конфига'''
 def new_config():
-    homepath = os.getenv('USERPROFILE')
-    os.mkdir(f'{homepath}\AppData\Local\corpwalp')
-    with open(f'{homepath}\AppData\Local\corpwalp\config.ini', 'w') as f:
+    with open(f'{os.getcwd()}\config.ini', 'w') as f:
         f.write('[DEFAULT]\n')
-        f.write(f"local = {homepath}\AppData\Local\corpwalp\local_wallp.jpg\n") #Директория хранения фото на ПК
+        f.write(f"local = {os.getcwd()}\local_wallp.jpg\n") #Директория хранения фото на ПК
         f.write('auto = True\n') #автосмена обоев вкл или выкл
         f.write("logo = OFS.JPG\n") # Диретория хранения логотипа
-        f.write(f"new_wallp = {homepath}\AppData\Local\corpwalp\corp_wallpaper.jpg\n") #Директория хранения нового файла рабочего стола
+        f.write(f"new_wallp = {os.getcwd()}\corp_wallpaper.jpg\n") #Директория хранения нового файла рабочего стола
         f.write("config = config.ini")
 
 '''Проверка автоматической смены изображений'''
@@ -175,7 +173,7 @@ def get_pc_info():
     symb = User_name.find('\\')
     User_name = User_name[symb+1:]
     '''#Собираем список параметров полученных выше и передаем в функцию создания watermark'''
-    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version])
+    param.extend([Host_Name, Mother_name, IP_adress, Machine_Domain,Logon_Domain, Logon_Server, User_name, OS_Version, Build_number, OS_Build, SCCM_version,Edge_version, Uptime])
     return param
 '''Создание картинки с Watermark'''
 def create_image(dir_walpp):
@@ -187,7 +185,7 @@ def create_image(dir_walpp):
     monitor_width = GetSystemMetrics(0)
     general_watermark = Image.new('RGBA', (300, 370))
     draw_text = ImageDraw.Draw(general_watermark)
-    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version']
+    name_param = ['Host Name', 'Serial number', 'IP Adress', 'Machine Domain', 'Logon Domain', 'Logon Server', 'User Name', 'OS Version', 'Build Number', 'OS Build', 'SCCM Client Version', 'Edge Version', 'Uptime']
     value_param = get_pc_info()
     font = ImageFont.truetype('arial.ttf', size=15)
     coordy = 170
@@ -249,7 +247,7 @@ def changeBG():
 def read_conf():
     homepath = os.getenv('USERPROFILE')
     config = configparser.ConfigParser()
-    conf_file = f'{homepath}\AppData\Local\corpwalp\config.ini'
+    conf_file = f'{os.getcwd()}\config.ini'
     config.read(conf_file)
     clocal = config['DEFAULT']['local']
     cauto = config['DEFAULT']['auto']
@@ -262,7 +260,7 @@ def read_conf():
 if __name__ == "__main__":
     homepath = os.getenv('USERPROFILE')
     '''Проверка наличия конфигурационного файла'''
-    if os.path.exists(f'{homepath}\AppData\Local\corpwalp\config.ini'):
+    if os.path.exists(f'{os.getcwd()}\config.ini'):
         pass
         #print('Файл конфигурации успешно загружен')
     else:
