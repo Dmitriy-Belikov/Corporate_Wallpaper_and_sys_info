@@ -157,8 +157,8 @@ def get_pc_info():
     '''#Домен в котором состоит машина'''
     try:
         Machine_Domain = socket.getfqdn().split('.', 1)[1]
-        if Machine_Domain == 'ent.techofs.com':
-            Machine_Domain = 'TECHOFS'
+        if Machine_Domain == '***':
+            Machine_Domain = '****'
         Logon_Domain = os.environ['userdomain']
     except:
         Logon_Domain = 'None'
