@@ -17,6 +17,7 @@
 
     Host Name
     Serial Number
+    Laptop model
     IP Adress
     Machine Domain
     Logon Domain
@@ -27,3 +28,4 @@
     OS Build
     SCCM Client Version
     Edge Version
+    Uptime
