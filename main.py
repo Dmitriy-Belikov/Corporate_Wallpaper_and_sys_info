@@ -255,7 +255,6 @@ def ico():
             on_clicked,
             checked=lambda item: cauto))).run()
 
-
 if __name__ == "__main__":
     homepath = os.getenv('USERPROFILE')
     '''Проверка наличия конфигурационного файла'''
